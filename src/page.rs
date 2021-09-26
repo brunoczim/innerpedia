@@ -77,6 +77,8 @@ impl<'section, 'loc, 'site> fmt::Display
 /// A page of the encyclopedia. Contains everything in a page.
 #[derive(Debug, Clone)]
 pub struct Page {
+    /// The header of the page.
+    pub banner: DynComponent,
     /// The external-most title of the page.
     pub title: String,
     /// The external-most body of the page.
@@ -117,12 +119,12 @@ impl<'page, 'loc, 'site> fmt::Display for RenderPage<'page, 'loc, 'site> {
              name=\"viewport\" content=\"width=device-width, \
              initial-scale=1.0\"><link rel=\"stylesheet\" type=\"text/css\" \
              href=\"{css}\"><title>{title}</title><body><div \
-             id=\"page-top\"><div id=\"banner\"><a href=\"{home}\">The World \
-             From The Stars</a></div><h1>{title}</h1><div \
+             id=\"page-top\"><div \
+             id=\"banner\">{banner}</div><h1>{title}</h1><div \
              id=\"body-wrapper\">{body}",
             css = ctx.renderer(InternalPath::parse("css/main.css").unwrap()),
             title = ctx.renderer(&self.page.title),
-            home = ctx.renderer(InternalPath::parse("").unwrap()),
+            banner = ctx.renderer(&self.page.banner),
             body = ctx.renderer(&self.page.body),
         )?;
 
