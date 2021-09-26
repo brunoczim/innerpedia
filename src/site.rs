@@ -3,7 +3,7 @@
 
 use crate::{
     location::{Fragment, InternalPath},
-    page::{Page, RenderPage},
+    page::Page,
 };
 use anyhow::Context as _;
 use std::{
@@ -318,7 +318,7 @@ impl Generator {
             let res = write!(
                 BufWriter::new(file),
                 "{}",
-                RenderPage { page, location: &loc, site: &self.site }
+                page.renderer(&loc, &self.site),
             );
             res.with_context(|| format!("Generating page {}", path.display()))?;
         }
