@@ -7,7 +7,12 @@ pub mod list;
 pub mod audio;
 
 use crate::{location::InternalPath, site::Site};
-use std::{borrow::Cow, fmt, rc::Rc, sync::Arc};
+use std::{
+    borrow::Cow,
+    fmt::{self, Write},
+    rc::Rc,
+    sync::Arc,
+};
 
 fn html_escape(ch: char) -> Option<&'static str> {
     match ch {
@@ -202,19 +207,7 @@ impl Component for str {
     type Kind = InlineComponent;
 
     fn to_html(&self, fmt: &mut fmt::Formatter, _ctx: Context) -> fmt::Result {
-        let mut start = 0;
-        let iter = self
-            .char_indices()
-            .filter_map(|(i, ch)| html_escape(ch).map(|s| (i, s)));
-
-        for (end, escape) in iter {
-            fmt.write_str(&self[start .. end])?;
-            fmt.write_str(escape)?;
-            start = end + 1;
-        }
-
-        fmt.write_str(&self[start ..])?;
-        Ok(())
+        FmtAdapter { buf: fmt }.write_str(self)
     }
 }
 
@@ -223,6 +216,35 @@ impl Component for String {
 
     fn to_html(&self, fmt: &mut fmt::Formatter, ctx: Context) -> fmt::Result {
         (**self).to_html(fmt, ctx)
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+struct FmtAdapter<W>
+where
+    W: fmt::Write,
+{
+    buf: W,
+}
+
+impl<W> fmt::Write for FmtAdapter<W>
+where
+    W: fmt::Write,
+{
+    fn write_str(&mut self, string: &str) -> fmt::Result {
+        let mut start = 0;
+        let iter = string
+            .char_indices()
+            .filter_map(|(i, ch)| html_escape(ch).map(|s| (i, s)));
+
+        for (end, escape) in iter {
+            self.buf.write_str(&string[start .. end])?;
+            self.buf.write_str(escape)?;
+            start = end + 1;
+        }
+
+        self.buf.write_str(&string[start ..])?;
+        Ok(())
     }
 }
 
@@ -240,5 +262,22 @@ where
 
     fn to_html(&self, fmt: &mut fmt::Formatter, ctx: Context) -> fmt::Result {
         self.0.to_html(fmt, ctx)
+    }
+}
+
+/// Uses given data to make a component if data implements [`fmt::Display`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct Display<T>(pub T)
+where
+    T: fmt::Debug + fmt::Display;
+
+impl<T> Component for Display<T>
+where
+    T: fmt::Debug + fmt::Display,
+{
+    type Kind = InlineComponent;
+
+    fn to_html(&self, fmt: &mut fmt::Formatter, _ctx: Context) -> fmt::Result {
+        write!(FmtAdapter { buf: fmt }, "{}", self.0)
     }
 }
