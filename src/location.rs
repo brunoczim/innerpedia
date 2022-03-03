@@ -1,4 +1,4 @@
-//! This module provides location, paths, URLs.
+//! This module provides location, paths, Urls.
 
 use crate::component::{Component, Context, InlineComponent};
 use percent_encoding::{percent_encode, CONTROLS};
@@ -9,8 +9,8 @@ use url::Url;
 /// A location of a page, either internal or external.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum Location {
-    /// An external page (or an internal page encoded as an external URL).
-    URL(Url),
+    /// An external page (or an internal page encoded as an external Url).
+    Url(Url),
     /// An internal location.
     Internal(InternalLoc),
 }
@@ -29,17 +29,26 @@ impl From<InternalLoc> for Location {
 
 impl From<Url> for Location {
     fn from(url: Url) -> Self {
-        Location::URL(url)
+        Location::Url(url)
     }
 }
 
 impl Location {
+    pub fn url<S>(contents: S) -> Self
+    where
+        S: AsRef<str>,
+    {
+        Location::Url(Url::parse(contents.as_ref()).expect("bad URL"))
+    }
+
     /// Parses an internal location but returns a generic location.
     pub fn internal<S>(contents: S) -> Self
     where
         S: AsRef<str>,
     {
-        Location::Internal(InternalLoc::parse(contents).unwrap())
+        Location::Internal(
+            InternalLoc::parse(contents).expect("bad internal location"),
+        )
     }
 }
 
@@ -48,7 +57,7 @@ impl Component for Location {
 
     fn to_html(&self, fmt: &mut fmt::Formatter, ctx: Context) -> fmt::Result {
         match self {
-            Location::URL(url) => write!(fmt, "{}", url),
+            Location::Url(url) => write!(fmt, "{}", url),
             Location::Internal(int) => int.to_html(fmt, ctx),
         }
     }
