@@ -251,6 +251,7 @@ impl Generator {
     /// Also copies assets.
     pub fn gen(&self) -> anyhow::Result<()> {
         if self.assets_dir != self.output_dir {
+            fs::remove_dir_all(&self.output_dir)?;
             self.copy_assets()?;
         }
         self.gen_pages()?;
